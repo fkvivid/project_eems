@@ -1,7 +1,5 @@
 package com.eems.service;
 
-import com.eems.dal.*;
-import com.eems.domain.*;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.sql.Connection;
@@ -9,17 +7,29 @@ import java.sql.SQLException;
 import java.time.LocalDate;
 import java.util.List;
 
+import com.eems.dal.ClientRepository;
+import com.eems.dal.DatabaseConnection;
+import com.eems.dal.DepartmentRepository;
+import com.eems.dal.EmployeeProjectRepository;
+import com.eems.dal.EmployeeRepository;
+import com.eems.dal.ProjectRepository;
+import com.eems.domain.Client;
+import com.eems.domain.Department;
+import com.eems.domain.Employee;
+import com.eems.domain.EmployeeProject;
+import com.eems.domain.Project;
+
 /**
  * Business Logic Layer: EEMS Service
  * Contains all business logic and validation
  */
 public class EEMSService {
 
-    private DepartmentRepository departmentRepo;
-    private EmployeeRepository employeeRepo;
-    private ProjectRepository projectRepo;
-    private ClientRepository clientRepo;
-    private EmployeeProjectRepository empProjRepo;
+    private final DepartmentRepository departmentRepo;
+    private final EmployeeRepository employeeRepo;
+    private final ProjectRepository projectRepo;
+    private final ClientRepository clientRepo;
+    private final EmployeeProjectRepository empProjRepo;
 
     public EEMSService() {
         this.departmentRepo = new DepartmentRepository();
@@ -42,32 +52,42 @@ public class EEMSService {
         // Calculate duration in months (rounded up)
         long durationMonths = project.getDurationInMonths();
 
-        // Get all employee assignments for this project
-        List<EmployeeProject> assignments = empProjRepo.findByProjectId(projectId);
+    // Get all employee assignments for this project
+    List<EmployeeProject> assignments = empProjRepo.findByProjectId(projectId);
 
-        BigDecimal totalCost = BigDecimal.ZERO;
+    // Map employeeId -> total allocation percent for this project (in case an employee appears multiple times)
+    java.util.Map<Integer, Integer> allocationByEmployee = assignments.stream()
+        .collect(java.util.stream.Collectors.toMap(
+            EmployeeProject::getEmployeeId,
+            EmployeeProject::getTimeAllocationPercent,
+            Integer::sum
+        ));
 
-        // Calculate cost for each employee
-        for (EmployeeProject assignment : assignments) {
-            Employee employee = employeeRepo.findById(assignment.getEmployeeId());
-            if (employee != null) {
-                // Monthly salary
-                BigDecimal monthlySalary = employee.getMonthlySalary();
+    // Prefetch all employees used in this project to avoid checked exceptions inside streams
+    List<Integer> employeeIds = allocationByEmployee.keySet().stream().toList();
+    List<Employee> employees = employeeRepo.findByIds(employeeIds);
 
-                // Time allocation as decimal (e.g., 80% = 0.80)
-                BigDecimal allocationDecimal = new BigDecimal(assignment.getTimeAllocationPercent())
-                        .divide(new BigDecimal("100"), 4, RoundingMode.HALF_UP);
+    java.util.Map<Integer, Employee> employeeById = employees.stream()
+        .collect(java.util.stream.Collectors.toMap(Employee::getEmployeeId, e -> e));
 
-                // Cost of employee = monthlySalary * durationMonths * allocationPercent
-                BigDecimal employeeCost = monthlySalary
-                        .multiply(new BigDecimal(durationMonths))
-                        .multiply(allocationDecimal);
+    BigDecimal totalCost = allocationByEmployee.entrySet().stream()
+        .map(entry -> {
+            int empId = entry.getKey();
+            int allocationPercent = entry.getValue();
+            Employee employee = employeeById.get(empId);
+            if (employee == null) return BigDecimal.ZERO;
 
-                totalCost = totalCost.add(employeeCost);
-            }
-        }
+            BigDecimal monthlySalary = employee.getMonthlySalary();
+            BigDecimal allocationDecimal = new BigDecimal(allocationPercent)
+                .divide(new BigDecimal("100"), 4, RoundingMode.HALF_UP);
 
-        return totalCost.setScale(2, RoundingMode.HALF_UP);
+            return monthlySalary
+                .multiply(new BigDecimal(durationMonths))
+                .multiply(allocationDecimal);
+        })
+        .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+    return totalCost.setScale(2, RoundingMode.HALF_UP);
     }
 
     // ============================================
@@ -144,7 +164,12 @@ public class EEMSService {
                 return false;
             }
 
-        } catch (Exception e) {
+        } catch (SQLException e) {
+            if (conn != null) {
+                conn.rollback();
+            }
+            throw e;
+        } catch (RuntimeException e) {
             if (conn != null) {
                 conn.rollback();
             }

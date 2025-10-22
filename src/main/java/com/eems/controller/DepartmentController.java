@@ -1,10 +1,11 @@
 package com.eems.controller;
 
-import com.eems.domain.Department;
-import com.eems.service.EEMSService;
 import java.math.BigDecimal;
 import java.sql.SQLException;
 import java.util.List;
+
+import com.eems.domain.Department;
+import com.eems.service.EEMSService;
 
 /**
  * Presentation Layer: Department Controller
@@ -12,7 +13,7 @@ import java.util.List;
  */
 public class DepartmentController {
 
-    private EEMSService service;
+    private final EEMSService service;
 
     public DepartmentController() {
         this.service = new EEMSService();
@@ -45,9 +46,7 @@ public class DepartmentController {
         try {
             List<Department> departments = service.getAllDepartments();
             System.out.println("\n=== All Departments ===");
-            for (Department dept : departments) {
-                System.out.println(dept);
-            }
+            departments.stream().forEach(System.out::println);
             System.out.println("Total: " + departments.size() + " departments");
         } catch (SQLException e) {
             System.err.println("Error retrieving departments: " + e.getMessage());

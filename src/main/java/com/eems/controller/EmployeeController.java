@@ -1,11 +1,12 @@
 package com.eems.controller;
 
-import com.eems.domain.Employee;
-import com.eems.service.EEMSService;
 import java.math.BigDecimal;
 import java.sql.SQLException;
 import java.time.LocalDate;
 import java.util.List;
+
+import com.eems.domain.Employee;
+import com.eems.service.EEMSService;
 
 /**
  * Presentation Layer: Employee Controller
@@ -13,7 +14,7 @@ import java.util.List;
  */
 public class EmployeeController {
 
-    private EEMSService service;
+    private final EEMSService service;
 
     public EmployeeController() {
         this.service = new EEMSService();
@@ -47,9 +48,7 @@ public class EmployeeController {
         try {
             List<Employee> employees = service.getAllEmployees();
             System.out.println("\n=== All Employees ===");
-            for (Employee emp : employees) {
-                System.out.println(emp);
-            }
+            employees.stream().forEach(System.out::println);
             System.out.println("Total: " + employees.size() + " employees");
         } catch (SQLException e) {
             System.err.println("Error retrieving employees: " + e.getMessage());

@@ -1,10 +1,15 @@
 package com.eems.dal;
 
-import com.eems.domain.Employee;
-import java.sql.*;
-import java.time.LocalDate;
+import java.sql.Connection;
+import java.sql.Date;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
+
+import com.eems.domain.Employee;
 
 /**
  * Data Access Layer: Employee Repository
@@ -110,6 +115,38 @@ public class EmployeeRepository {
              PreparedStatement stmt = conn.prepareStatement(sql)) {
 
             stmt.setInt(1, projectId);
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    employees.add(mapResultSetToEmployee(rs));
+                }
+            }
+        }
+
+        return employees;
+    }
+
+    /**
+     * Fetch multiple employees by their IDs using an IN clause.
+     */
+    public List<Employee> findByIds(List<Integer> ids) throws SQLException {
+        if (ids == null || ids.isEmpty()) return new ArrayList<>();
+
+        StringBuilder placeholders = new StringBuilder();
+        for (int i = 0; i < ids.size(); i++) {
+            placeholders.append("?");
+            if (i < ids.size() - 1) placeholders.append(",");
+        }
+
+        String sql = "SELECT * FROM Employee WHERE employee_id IN (" + placeholders.toString() + ")";
+        List<Employee> employees = new ArrayList<>();
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            for (int i = 0; i < ids.size(); i++) {
+                stmt.setInt(i + 1, ids.get(i));
+            }
 
             try (ResultSet rs = stmt.executeQuery()) {
                 while (rs.next()) {

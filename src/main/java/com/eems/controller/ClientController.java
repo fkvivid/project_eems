@@ -1,9 +1,10 @@
 package com.eems.controller;
 
-import com.eems.domain.Client;
-import com.eems.service.EEMSService;
 import java.sql.SQLException;
 import java.util.List;
+
+import com.eems.domain.Client;
+import com.eems.service.EEMSService;
 
 /**
  * Presentation Layer: Client Controller
@@ -11,7 +12,7 @@ import java.util.List;
  */
 public class ClientController {
 
-    private EEMSService service;
+    private final EEMSService service;
 
     public ClientController() {
         this.service = new EEMSService();

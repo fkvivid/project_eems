@@ -88,7 +88,7 @@ public class Employee {
 
     // Business Logic Methods
     public BigDecimal getMonthlySalary() {
-        return salary.divide(new BigDecimal("12"), 2, BigDecimal.ROUND_HALF_UP);
+        return salary.divide(new BigDecimal("12"), 2, java.math.RoundingMode.HALF_UP);
     }
 
     public boolean isValidSalary() {

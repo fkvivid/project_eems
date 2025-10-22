@@ -1,11 +1,12 @@
 package com.eems.controller;
 
-import com.eems.domain.Project;
-import com.eems.service.EEMSService;
 import java.math.BigDecimal;
 import java.sql.SQLException;
 import java.time.LocalDate;
 import java.util.List;
+
+import com.eems.domain.Project;
+import com.eems.service.EEMSService;
 
 /**
  * Presentation Layer: Project Controller
@@ -13,7 +14,7 @@ import java.util.List;
  */
 public class ProjectController {
 
-    private EEMSService service;
+    private final EEMSService service;
 
     public ProjectController() {
         this.service = new EEMSService();
@@ -47,9 +48,7 @@ public class ProjectController {
         try {
             List<Project> projects = service.getAllProjects();
             System.out.println("\n=== All Projects ===");
-            for (Project proj : projects) {
-                System.out.println(proj);
-            }
+            projects.stream().forEach(System.out::println);
             System.out.println("Total: " + projects.size() + " projects");
         } catch (SQLException e) {
             System.err.println("Error retrieving projects: " + e.getMessage());
