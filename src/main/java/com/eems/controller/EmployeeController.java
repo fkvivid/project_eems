@@ -48,7 +48,7 @@ public class EmployeeController {
         try {
             List<Employee> employees = service.getAllEmployees();
             System.out.println("\n=== All Employees ===");
-            employees.stream().forEach(System.out::println);
+            employees.forEach(System.out::println);
             System.out.println("Total: " + employees.size() + " employees");
         } catch (SQLException e) {
             System.err.println("Error retrieving employees: " + e.getMessage());

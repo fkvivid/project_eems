@@ -37,7 +37,7 @@ public class ProjectController {
             if (proj != null) {
                 System.out.println("Project found: " + proj);
             } else {
-                System.out.println("Project not found with ID: " + id);
+                System.out.println("No project not found with ID: " + id);
             }
         } catch (SQLException e) {
             System.err.println("Error retrieving project: " + e.getMessage());
@@ -48,7 +48,7 @@ public class ProjectController {
         try {
             List<Project> projects = service.getAllProjects();
             System.out.println("\n=== All Projects ===");
-            projects.stream().forEach(System.out::println);
+            projects.forEach(System.out::println);
             System.out.println("Total: " + projects.size() + " projects");
         } catch (SQLException e) {
             System.err.println("Error retrieving projects: " + e.getMessage());

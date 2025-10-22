@@ -46,7 +46,7 @@ public class DepartmentController {
         try {
             List<Department> departments = service.getAllDepartments();
             System.out.println("\n=== All Departments ===");
-            departments.stream().forEach(System.out::println);
+            departments.forEach(System.out::println);
             System.out.println("Total: " + departments.size() + " departments");
         } catch (SQLException e) {
             System.err.println("Error retrieving departments: " + e.getMessage());

@@ -46,6 +46,10 @@ public class EmployeeProjectRepository {
 
     public List<EmployeeProject> findByProjectId(int projectId) throws SQLException {
         String sql = "SELECT * FROM Employee_Project WHERE project_id = ?";
+        return getEmployeeProjects(projectId, sql);
+    }
+
+    private List<EmployeeProject> getEmployeeProjects(int projectId, String sql) throws SQLException {
         List<EmployeeProject> assignments = new ArrayList<>();
 
         try (Connection conn = DatabaseConnection.getConnection();
@@ -65,21 +69,7 @@ public class EmployeeProjectRepository {
 
     public List<EmployeeProject> findByEmployeeId(int employeeId) throws SQLException {
         String sql = "SELECT * FROM Employee_Project WHERE employee_id = ?";
-        List<EmployeeProject> assignments = new ArrayList<>();
-
-        try (Connection conn = DatabaseConnection.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-
-            stmt.setInt(1, employeeId);
-
-            try (ResultSet rs = stmt.executeQuery()) {
-                while (rs.next()) {
-                    assignments.add(mapResultSetToEmployeeProject(rs));
-                }
-            }
-        }
-
-        return assignments;
+        return getEmployeeProjects(employeeId, sql);
     }
 
     public boolean update(EmployeeProject employeeProject) throws SQLException {
