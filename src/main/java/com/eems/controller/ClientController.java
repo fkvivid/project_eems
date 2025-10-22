@@ -83,7 +83,7 @@ public class ClientController {
         }
     }
 
-    public void findClientsByUpcomingDeadline(int daysUntilDeadline) {
+    public void findClientsByUpcomingProjectDeadline(int daysUntilDeadline) {
         try {
             List<Client> clients = service.findClientsByUpcomingProjectDeadline(daysUntilDeadline);
             System.out.println("\n=== Clients with Projects Ending in " + daysUntilDeadline + " Days ===");

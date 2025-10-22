@@ -83,7 +83,7 @@ public class EmployeeController {
         }
     }
 
-    public void transferEmployee(int employeeId, int newDepartmentId) {
+    public void transferEmployeeToDepartment(int employeeId, int newDepartmentId) {
         try {
             boolean transferred = service.transferEmployeeToDepartment(employeeId, newDepartmentId);
             if (transferred) {

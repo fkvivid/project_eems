@@ -153,8 +153,8 @@ public class EEMSTestApplication {
         // TEST 7: TASK 3 - Find Clients by Upcoming Deadline
         // ==========================================
         System.out.println("\n\n========== TASK 3: FIND CLIENTS BY UPCOMING DEADLINE ==========");
-        clientController.findClientsByUpcomingDeadline(90);  // Projects ending in 90 days
-        clientController.findClientsByUpcomingDeadline(365); // Projects ending in 1 year
+        clientController.findClientsByUpcomingProjectDeadline(90);  // Projects ending in 90 days
+        clientController.findClientsByUpcomingProjectDeadline(365); // Projects ending in 1 year
 
         // ==========================================
         // TEST 8: TASK 4 - Transfer Employee
@@ -164,7 +164,7 @@ public class EEMSTestApplication {
         empController.getEmployeeById(3);
 
         System.out.println("\n--- Performing Transfer ---");
-        empController.transferEmployee(3, 2);
+        empController.transferEmployeeToDepartment(3, 2);
 
         System.out.println("\n--- After Transfer ---");
         empController.getEmployeeById(3);
