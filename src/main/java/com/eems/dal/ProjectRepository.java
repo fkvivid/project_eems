@@ -1,10 +1,16 @@
 package com.eems.dal;
 
-import com.eems.domain.Project;
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.Date;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+
+import com.eems.domain.Project;
 
 /**
  * Data Access Layer: Project Repository
@@ -102,7 +108,7 @@ public class ProjectRepository {
         }
     }
 
-    public List<Project> findByDepartmentId(int departmentId, String sortBy) throws SQLException {
+    public List<Project> findActiveByDepartmentId(int departmentId, String sortBy) throws SQLException {
         String sql = "SELECT DISTINCT p.* FROM Project p " +
                 "INNER JOIN Project_Department pd ON p.project_id = pd.project_id " +
                 "WHERE pd.department_id = ? AND p.status = 'Active' " +

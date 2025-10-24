@@ -1,0 +1,44 @@
+%% Simplified 4-layer architecture for project_eems
+%% Layers: Presentation, Business, Domain, Data Access
+
+flowchart TB
+  %% Presentation layer (controllers / app entry)
+  subgraph Presentation[Presentation]
+    APP["EEMSTestApplication\n(src/main/java/com/eems/EEMSTestApplication)"]
+    Controllers["Controllers\n(src/main/java/com/eems/controller)"]
+  end
+
+  %% Business layer (service)
+  subgraph Business[Business / Service]
+    ServiceComp["EEMSService\n(src/main/java/com/eems/service)"]
+  end
+
+  %% Domain layer (models)
+  subgraph Domain[Domain Models]
+    DomainPkg["Domain / Models\n(src/main/java/com/eems/domain)"]
+  end
+
+  %% Data Access layer (repositories / DB)
+  subgraph DataAccess[Data Access]
+    DAL["Repositories / DAL\n(src/main/java/com/eems/dal)"]
+    DB["MySQL Database\n(project_eems)\n(eems_database_schema.sql)"]
+  end
+
+  %% Flow arrows
+  APP --> Controllers
+  Controllers --> ServiceComp
+  ServiceComp --> DomainPkg
+  ServiceComp --> DAL
+  DAL --> DB
+
+  %% Visual styles (light)
+  style Presentation fill:#e8f3ff,stroke:#1f6feb
+  style Business fill:#eafbe7,stroke:#138000
+  style Domain fill:#fffdf0,stroke:#b08900
+  style DataAccess fill:#fff0f6,stroke:#c32866
+  style APP fill:#ffffff
+  style Controllers fill:#ffffff
+  style ServiceComp fill:#ffffff
+  style DomainPkg fill:#ffffff
+  style DAL fill:#ffffff
+  style DB fill:#fff7e6

@@ -58,6 +58,24 @@ public class DepartmentRepository {
         return null;
     }
 
+    /**
+     * Find department using an existing connection (for transactional checks).
+     */
+    public Department findById(Connection conn, int departmentId) throws SQLException {
+        String sql = "SELECT * FROM Department WHERE department_id = ?";
+
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, departmentId);
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return mapResultSetToDepartment(rs);
+                }
+            }
+        }
+
+        return null;
+    }
+
     public List<Department> findAll() throws SQLException {
         String sql = "SELECT * FROM Department";
         List<Department> departments = new ArrayList<>();

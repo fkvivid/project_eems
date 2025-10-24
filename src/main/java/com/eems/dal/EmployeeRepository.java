@@ -61,6 +61,60 @@ public class EmployeeRepository {
         return null;
     }
 
+    /**
+     * Find employee using an existing connection (participates in caller transaction).
+     */
+    public Employee findById(Connection conn, int employeeId) throws SQLException {
+        String sql = "SELECT * FROM Employee WHERE employee_id = ?";
+
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, employeeId);
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return mapResultSetToEmployee(rs);
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Find employee for update (pessimistic lock) using provided connection.
+     */
+    public Employee findByIdForUpdate(Connection conn, int employeeId) throws SQLException {
+        String sql = "SELECT * FROM Employee WHERE employee_id = ? FOR UPDATE";
+
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, employeeId);
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return mapResultSetToEmployee(rs);
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Update employee using existing connection so it participates in caller transaction.
+     */
+    public boolean update(Connection conn, Employee employee) throws SQLException {
+        String sql = "UPDATE Employee SET full_name = ?, title = ?, hire_date = ?, salary = ?, department_id = ? WHERE employee_id = ?";
+
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, employee.getFullName());
+            stmt.setString(2, employee.getTitle());
+            stmt.setDate(3, Date.valueOf(employee.getHireDate()));
+            stmt.setBigDecimal(4, employee.getSalary());
+            stmt.setInt(5, employee.getDepartmentId());
+            stmt.setInt(6, employee.getEmployeeId());
+
+            return stmt.executeUpdate() > 0;
+        }
+    }
+
     public List<Employee> findAll() throws SQLException {
         String sql = "SELECT * FROM Employee";
         List<Employee> employees = new ArrayList<>();

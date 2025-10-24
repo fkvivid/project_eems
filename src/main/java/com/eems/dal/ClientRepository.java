@@ -1,10 +1,16 @@
 package com.eems.dal;
 
-import com.eems.domain.Client;
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.Date;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+
+import com.eems.domain.Client;
 
 /**
  * Data Access Layer: Client Repository
@@ -140,7 +146,7 @@ public class ClientRepository {
             }
         }
 
-        return clients;
+        return clients.stream().distinct().toList();
     }
 
     private Client mapResultSetToClient(ResultSet rs) throws SQLException {

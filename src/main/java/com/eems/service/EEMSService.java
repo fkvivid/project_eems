@@ -6,6 +6,9 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 import com.eems.dal.ClientRepository;
 import com.eems.dal.DatabaseConnection;
@@ -43,51 +46,47 @@ public class EEMSService {
     // TASK 1: Calculate Project HR Cost
     // ============================================
     public BigDecimal calculateProjectHRCost(int projectId) throws SQLException {
-        // Get the project
-        Project project = projectRepo.findById(projectId);
-        if (project == null) {
-            throw new IllegalArgumentException("Project not found with ID: " + projectId);
-        }
+        Project project = Optional.ofNullable(projectRepo.findById(projectId))
+            .orElseThrow(() -> new IllegalArgumentException("Project not found with ID: " + projectId));
 
-        // Calculate duration in months (rounded up)
         long durationMonths = project.getDurationInMonths();
 
-    // Get all employee assignments for this project
-    List<EmployeeProject> assignments = empProjRepo.findByProjectId(projectId);
+        List<EmployeeProject> assignments = empProjRepo.findByProjectId(projectId);
+        List<Employee> employees = employeeRepo.findByIds(
+            assignments.stream()
+                .map(EmployeeProject::getEmployeeId)
+                .distinct()
+                .toList()
+        );
 
-    // Map employeeId -> total allocation percent for this project (in case an employee appears multiple times)
-    java.util.Map<Integer, Integer> allocationByEmployee = assignments.stream()
-        .collect(java.util.stream.Collectors.toMap(
-            EmployeeProject::getEmployeeId,
-            EmployeeProject::getTimeAllocationPercent,
-            Integer::sum
-        ));
+        Map<Integer, Employee> employeeById = employees.stream()
+            .collect(java.util.stream.Collectors.toMap(
+                Employee::getEmployeeId,
+                e -> e
+            ));
 
-    // Prefetch all employees used in this project to avoid checked exceptions inside streams
-    List<Integer> employeeIds = allocationByEmployee.keySet().stream().toList();
-    List<Employee> employees = employeeRepo.findByIds(employeeIds);
-
-    java.util.Map<Integer, Employee> employeeById = employees.stream()
-        .collect(java.util.stream.Collectors.toMap(Employee::getEmployeeId, e -> e));
-
-    BigDecimal totalCost = allocationByEmployee.entrySet().stream()
-        .map(entry -> {
-            int empId = entry.getKey();
-            int allocationPercent = entry.getValue();
-            Employee employee = employeeById.get(empId);
-            if (employee == null) return BigDecimal.ZERO;
-
-            BigDecimal monthlySalary = employee.getMonthlySalary();
-            BigDecimal allocationDecimal = new BigDecimal(allocationPercent)
-                .divide(new BigDecimal("100"), 4, RoundingMode.HALF_UP);
-
-            return monthlySalary
-                .multiply(new BigDecimal(durationMonths))
-                .multiply(allocationDecimal);
-        })
-        .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-    return totalCost.setScale(2, RoundingMode.HALF_UP);
+        // Calculate total cost using streams
+        return assignments.stream()
+            // Group by employee and sum their allocations
+            .collect(Collectors.groupingBy(
+                EmployeeProject::getEmployeeId,
+                Collectors.summingInt(EmployeeProject::getTimeAllocationPercent)))
+            .entrySet().stream()
+            // Convert to employee costs
+            .map(entry -> {
+                Employee employee = employeeById.get(entry.getKey());
+                if (employee == null) return BigDecimal.ZERO;
+                
+                // Following the exact formula from requirements with high precision:
+                // CostEmployee = (Salary / 12) × Duration (Months) × (Allocation Percentage / 100)
+                return employee.getSalary()  // Annual Salary
+                    .multiply(BigDecimal.valueOf(durationMonths))  // Times Duration
+                    .multiply(BigDecimal.valueOf(entry.getValue()))  // Times Allocation
+                    .divide(BigDecimal.valueOf(1200), 8, RoundingMode.HALF_EVEN);  // Divide by (12 * 100) with high precision
+            })
+            // Sum all costs and round only the final result to 2 decimal places
+            .reduce(BigDecimal.ZERO, BigDecimal::add)
+            .setScale(2, RoundingMode.HALF_UP);
     }
 
     // ============================================
@@ -105,7 +104,7 @@ public class EEMSService {
             throw new IllegalArgumentException("Invalid sort field: " + sortBy);
         }
 
-        return projectRepo.findByDepartmentId(departmentId, sortBy);
+        return projectRepo.findActiveByDepartmentId(departmentId, sortBy);
     }
 
     private boolean isValidSortField(String sortBy) {
@@ -129,32 +128,32 @@ public class EEMSService {
     // TASK 4: Transfer Employee to Department
     // ============================================
     public boolean transferEmployeeToDepartment(int employeeId, int newDepartmentId) throws SQLException {
-        Connection conn = null;
-        try {
-            // Get connection for transaction
-            conn = DatabaseConnection.getConnection();
+        try (Connection conn = DatabaseConnection.getConnection()) {
             conn.setAutoCommit(false);
 
-            // Validate employee exists
-            Employee employee = employeeRepo.findById(employeeId);
+            // Lock the employee row to avoid concurrent transfers
+            Employee employee = employeeRepo.findByIdForUpdate(conn, employeeId);
             if (employee == null) {
+                conn.rollback();
                 throw new IllegalArgumentException("Employee not found with ID: " + employeeId);
             }
 
-            // Validate new department exists
-            Department newDepartment = departmentRepo.findById(newDepartmentId);
+            // Ensure department exists within same transaction
+            Department newDepartment = departmentRepo.findById(conn, newDepartmentId);
             if (newDepartment == null) {
+                conn.rollback();
                 throw new IllegalArgumentException("Department not found with ID: " + newDepartmentId);
             }
 
             // Check if employee is already in that department
             if (employee.getDepartmentId() == newDepartmentId) {
+                conn.rollback();
                 throw new IllegalArgumentException("Employee is already in department: " + newDepartmentId);
             }
 
-            // Update employee's department
+            // Update using the same connection (participates in transaction)
             employee.setDepartmentId(newDepartmentId);
-            boolean updated = employeeRepo.update(employee);
+            boolean updated = employeeRepo.update(conn, employee);
 
             if (updated) {
                 conn.commit();
@@ -162,22 +161,6 @@ public class EEMSService {
             } else {
                 conn.rollback();
                 return false;
-            }
-
-        } catch (SQLException e) {
-            if (conn != null) {
-                conn.rollback();
-            }
-            throw e;
-        } catch (RuntimeException e) {
-            if (conn != null) {
-                conn.rollback();
-            }
-            throw new SQLException("Transfer failed: " + e.getMessage(), e);
-        } finally {
-            if (conn != null) {
-                conn.setAutoCommit(true);
-                conn.close();
             }
         }
     }

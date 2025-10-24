@@ -100,7 +100,9 @@ public class Project {
 
     // Business Logic Methods
     public long getDurationInMonths() {
-        long days = ChronoUnit.DAYS.between(startDate, endDate);
+        // Calculate days between dates (inclusive)
+        long days = ChronoUnit.DAYS.between(startDate, endDate) + 1;
+        // Convert to months, rounding up partial months
         return (long) Math.ceil(days / 30.0);
     }
 
