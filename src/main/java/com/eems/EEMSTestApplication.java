@@ -77,15 +77,15 @@ public class EEMSTestApplication {
 
         System.out.println("\nTest Case 2: Invalid Transfer (Same Department)");
         System.out.println("Attempting to transfer Michael Brown to Marketing again (should fail)");
-        empController.transferEmployee(3, 2);
+        empController.transferEmployeeToDepartment(3, 2);
 
         System.out.println("\nTest Case 3: Invalid Transfer (Non-existent Department)");
         System.out.println("Attempting to transfer to non-existent department 10 (should fail)");
-        empController.transferEmployee(3, 10);
+        empController.transferEmployeeToDepartment(3, 10);
 
         System.out.println("\nTest Case 4: Restoring Original State");
         System.out.println("Transferring Michael Brown back to HR (Dept 3)");
-        empController.transferEmployee(3, 3);
+        empController.transferEmployeeToDepartment(3, 3);
 
         System.out.println("\n--- Final State (Should Match Initial State) ---");
         empController.getEmployeeById(3);
